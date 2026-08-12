@@ -1,238 +1,448 @@
-import { useRef, useState } from "react";
-import NavBar from "../components/NavBar.jsx";
+import React, { useCallback, useRef, useState } from "react";
+import {
+  FileCheck2,
+  FileText,
+  Cloud,
+  Monitor,
+  Info,
+  X,
+  ShieldCheck,
+  UploadCloud,
+} from "lucide-react";
 
-export default function Upload() {
-  const [file, setFile] = useState(null);
+/**
+ * ResumeScout — Submit Document for Analysis
+ * React conversion of the original static HTML mock.
+ *
+ * Design tokens are lifted 1:1 from the original tailwind.config
+ * (custom Material palette) and applied via CSS variables, since
+ * this environment only ships Tailwind's core utility classes.
+ */
+
+const TOKENS = {
+  "--surface": "#f8f9ff",
+  "--tertiary": "#353c4c",
+  "--surface-container-low": "#eff4ff",
+  "--background": "#f8f9ff",
+  "--on-error-container": "#93000a",
+  "--inverse-surface": "#27313f",
+  "--secondary": "#416656",
+  "--error": "#ba1a1a",
+  "--outline-variant": "#bec9c2",
+  "--surface-bright": "#f8f9ff",
+  "--on-error": "#ffffff",
+  "--on-surface": "#121c2a",
+  "--on-primary": "#ffffff",
+  "--surface-container": "#e6eeff",
+  "--on-primary-container": "#8bd6b7",
+  "--surface-container-lowest": "#ffffff",
+  "--on-tertiary": "#ffffff",
+  "--primary": "#004532",
+  "--outline": "#6f7973",
+  "--on-background": "#121c2a",
+  "--surface-variant": "#d9e3f6",
+  "--on-secondary-container": "#476c5b",
+  "--on-secondary": "#ffffff",
+  "--surface-container-high": "#dee9fc",
+  "--surface-container-highest": "#d9e3f6",
+  "--primary-container": "#065f46",
+  "--on-surface-variant": "#3f4944",
+  "--secondary-container": "#c3ecd7",
+  "--error-container": "#ffdad6",
+};
+
+const NAV_LINKS = ["Home", "Upload", "Dashboard", "Analysis"];
+
+function Toast({ onClose }) {
+  return (
+    <div
+      className="fixed top-6 right-6 z-[100] flex items-center gap-3 p-4 rounded-xl border animate-bounce"
+      style={{
+        background: "var(--primary)",
+        color: "var(--on-primary)",
+        borderColor: "var(--primary-container)",
+        boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+      }}
+    >
+      <ShieldCheck size={22} strokeWidth={2} />
+      <div className="flex flex-col">
+        <span className="text-[11px] font-semibold uppercase tracking-wider">
+          Upload Verified
+        </span>
+        <span className="text-sm opacity-90">
+          Document successfully queued for analysis
+        </span>
+      </div>
+      <button
+        className="ml-2 hover:opacity-70 transition-opacity"
+        onClick={onClose}
+        aria-label="Dismiss"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
+function DropZone({
+  kind, // "resume" | "jd"
+  file,
+  onFile,
+  onReset,
+}) {
   const [dragOver, setDragOver] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
 
-  const acceptFile = (f) => {
-    if (!f) return;
-    setFile(f);
-    setShowToast(true);
-  };
+  const isResume = kind === "resume";
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-    const dropped = e.dataTransfer.files?.[0];
-    if (dropped) acceptFile(dropped);
-  };
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragOver(false);
+      const f = e.dataTransfer.files?.[0];
+      if (f) onFile(f);
+    },
+    [onFile]
+  );
 
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOver(true);
   };
-
   const handleDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOver(false);
   };
 
-  const handleBrowseClick = () => fileInputRef.current?.click();
-
-  const handleFileInputChange = (e) => {
-    const chosen = e.target.files?.[0];
-    if (chosen) acceptFile(chosen);
+  const handleBrowse = () => inputRef.current?.click();
+  const handleInputChange = (e) => {
+    const f = e.target.files?.[0];
+    if (f) onFile(f);
+    e.target.value = "";
   };
 
-  const reset = () => {
-    setFile(null);
-    setShowToast(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const borderColor = file
+    ? "var(--primary)"
+    : dragOver
+    ? "var(--primary)"
+    : "var(--outline-variant)";
+
+  return (
+    <div
+      className="relative h-[420px] rounded-xl flex flex-col items-center justify-center p-10 transition-all duration-300 group cursor-pointer"
+      style={{
+        background: "#ffffff",
+        border: `1px solid ${borderColor}`,
+        boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+      }}
+      onDragEnter={handleDragOver}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={!file ? handleBrowse : undefined}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        onChange={handleInputChange}
+        accept={isResume ? ".pdf,.doc,.docx" : ".pdf,.doc,.docx,.txt"}
+      />
+
+      {file ? (
+        <div className="z-10 text-center space-y-6 w-full px-8">
+          <div
+            className="w-20 h-20 mx-auto rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--primary)",
+              color: "var(--on-primary)",
+              boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+            }}
+          >
+            <FileCheck2 size={36} />
+          </div>
+          <div>
+            <h3
+              className="text-2xl font-semibold mb-1 uppercase"
+              style={{ color: "var(--primary)" }}
+            >
+              Upload Complete
+            </h3>
+            <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>
+              {isResume
+                ? "1 file ready for institutional review"
+                : "Job description ready to calibrate analysis"}
+            </p>
+          </div>
+          <div
+            className="rounded-lg p-4 flex items-center justify-between"
+            style={{
+              background: "var(--surface-container)",
+              border: "1px solid rgba(0,69,50,0.2)",
+            }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText size={20} style={{ color: "var(--primary)" }} />
+              <span
+                className="text-base truncate max-w-[220px]"
+                style={{ color: "var(--on-surface)" }}
+                title={file.name}
+              >
+                {file.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <ShieldCheck size={16} style={{ color: "var(--primary)" }} />
+              <span
+                className="text-[11px] font-semibold uppercase px-2 rounded-full"
+                style={{
+                  color: "var(--primary)",
+                  background: "rgba(0,69,50,0.1)",
+                }}
+              >
+                Verified
+              </span>
+            </div>
+          </div>
+          <button
+            className="text-sm font-semibold hover:underline underline-offset-4"
+            style={{ color: "var(--primary)" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReset();
+            }}
+          >
+            Upload another file
+          </button>
+        </div>
+      ) : (
+        <div className="z-10 text-center space-y-6 w-full px-8">
+          <div
+            className="w-20 h-20 mx-auto rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--surface-container)",
+              color: "var(--primary)",
+              boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+            }}
+          >
+            {isResume ? <UploadCloud size={36} /> : <FileText size={36} />}
+          </div>
+          <div>
+            <h3
+              className="text-2xl font-semibold mb-1 uppercase"
+              style={{ color: "var(--primary)" }}
+            >
+              {isResume ? "Upload Resume" : "Upload Job Description"}
+            </h3>
+            <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>
+              {isResume
+                ? "Drag & drop a resume, or browse to select a file."
+                : "Upload the job requirements to calibrate the AI analysis."}
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              className="w-full py-2 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all"
+              style={{ background: "var(--primary)", color: "var(--on-primary)" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleBrowse();
+              }}
+            >
+              Browse Files
+            </button>
+            <button
+              className="w-full py-2 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all flex items-center justify-center gap-2"
+              style={{
+                border: "1px solid var(--outline-variant)",
+                color: "var(--on-surface)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Cloud size={16} />
+              Connect Drive
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SecondaryCard({ icon, title, description, buttonLabel }) {
+  return (
+    <div
+      className="rounded-xl p-6 flex flex-col h-full transition-colors cursor-pointer group active:scale-[0.98]"
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        boxShadow: "0px 2px 4px rgba(0,0,0,0.05)",
+      }}
+    >
+      <div className="mb-auto">
+        <div className="mb-2" style={{ color: "var(--primary)" }}>
+          {icon}
+        </div>
+        <h4 className="text-lg font-semibold mb-1" style={{ color: "var(--on-surface)" }}>
+          {title}
+        </h4>
+        <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>
+          {description}
+        </p>
+      </div>
+      <button
+        className="w-full mt-6 py-2 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all"
+        style={{ background: "var(--secondary-container)", color: "var(--on-secondary-container)" }}
+      >
+        {buttonLabel}
+      </button>
+    </div>
+  );
+}
+
+export default function ResumeScoutUpload() {
+  const [resumeFile, setResumeFile] = useState(null);
+  const [jdFile, setJdFile] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [activeNav, setActiveNav] = useState("Upload");
+  const toastTimer = useRef(null);
+
+  const showToast = useCallback(() => {
+    setToastVisible(true);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 4000);
+  }, []);
+
+  const handleResumeFile = (f) => {
+    setResumeFile(f);
+    showToast();
+  };
+  const handleJdFile = (f) => {
+    setJdFile(f);
+    showToast();
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-on-surface bg-surface">
-      {showToast && (
-        <div className="fixed top-lg right-lg z-[100] flex items-center gap-md bg-primary text-on-primary p-md rounded-xl shadow-academic border border-primary-container transition-all duration-300">
-          <span className="material-symbols-outlined">verified</span>
-          <div className="flex flex-col">
-            <span className="font-label-md text-label-md uppercase tracking-wider">
-              Upload Verified
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        ...TOKENS,
+        fontFamily: "Inter, sans-serif",
+        background: "var(--background)",
+        color: "var(--on-surface)",
+      }}
+    >
+      {toastVisible && <Toast onClose={() => setToastVisible(false)} />}
+
+      {/* Top Nav */}
+      <header
+        className="w-full top-0 sticky z-50"
+        style={{ background: "var(--surface)", borderBottom: "1px solid var(--outline-variant)" }}
+      >
+        <div className="max-w-[1280px] mx-auto px-6 flex justify-between items-center h-16">
+          <div className="flex items-center gap-12">
+            <span className="text-2xl font-bold" style={{ color: "var(--primary)" }}>
+              ResumeScout
             </span>
-            <span className="font-body-sm text-body-sm opacity-90">
-              Document successfully queued for analysis
-            </span>
+            <nav className="hidden md:flex items-center gap-6">
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setActiveNav(link);
+                  }}
+                  className="text-base transition-colors duration-200 cursor-pointer active:opacity-80 pb-1"
+                  style={
+                    activeNav === link
+                      ? {
+                          color: "var(--primary)",
+                          borderBottom: "2px solid var(--primary)",
+                          fontWeight: 700,
+                        }
+                      : { color: "var(--on-surface-variant)" }
+                  }
+                >
+                  {link}
+                </a>
+              ))}
+            </nav>
           </div>
-          <button
-            onClick={() => setShowToast(false)}
-            className="ml-md hover:opacity-70 transition-opacity"
-          >
-            <span className="material-symbols-outlined text-[18px]">close</span>
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              className="px-6 py-2 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all active:scale-95"
+              style={{ background: "var(--primary)", color: "var(--on-primary)" }}
+            >
+              Sign In
+            </button>
+          </div>
         </div>
-      )}
+      </header>
 
-      <NavBar />
-
-      <main className="flex-grow flex flex-col items-center justify-center py-xl px-lg">
-        <div className="max-w-[800px] w-full space-y-lg">
-          {/* Header Section */}
-          <div className="text-center space-y-sm mb-lg">
-            <h1 className="font-headline-lg text-headline-lg text-primary">
+      {/* Main */}
+      <main className="flex-grow flex flex-col items-center justify-center py-12 px-6">
+        <div className="max-w-[800px] w-full space-y-6">
+          <div className="text-center space-y-2 mb-6">
+            <h1 className="text-[32px] leading-[40px] font-semibold" style={{ color: "var(--primary)" }}>
               Submit Document for Analysis
             </h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Standardized academic screening for career progression and
-              institutional review.
+            <p className="text-base" style={{ color: "var(--on-surface-variant)" }}>
+              Standardized academic screening for career progression and institutional review.
             </p>
           </div>
 
-          {/* Main Upload Container */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg">
-            {/* Central Drag & Drop Area */}
-            <div className="lg:col-span-8">
-              <div
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragEnter={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onClick={!file ? handleBrowseClick : undefined}
-                className={`relative h-[420px] bg-white academic-border rounded-xl flex flex-col items-center justify-center p-xl transition-all duration-300 shadow-academic group ${
-                  !file ? "cursor-pointer hover:border-primary-fixed-variant" : ""
-                } border-primary ${dragOver ? "drag-over" : ""}`}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileInputChange}
-                />
-                <div className="absolute inset-0 border-2 border-primary rounded-xl m-sm pointer-events-none bg-secondary-container/10"></div>
-
-                {file ? (
-                  <div className="z-10 text-center space-y-lg w-full px-xl">
-                    <div className="w-20 h-20 mx-auto bg-primary text-on-primary rounded-full flex items-center justify-center shadow-academic">
-                      <span className="material-symbols-outlined text-[40px]">
-                        check
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-headline-md text-headline-md text-primary mb-xs uppercase">
-                        Upload Complete
-                      </h3>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant">
-                        1 file ready for institutional review
-                      </p>
-                    </div>
-                    <div className="bg-surface-container rounded-lg p-md border border-primary/20 flex items-center justify-between">
-                      <div className="flex items-center gap-sm">
-                        <span className="material-symbols-outlined text-primary">
-                          description
-                        </span>
-                        <span className="font-body-md text-body-md text-on-surface">
-                          {file.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-xs">
-                        <span className="material-symbols-outlined text-primary text-[18px]">
-                          verified
-                        </span>
-                        <span className="text-primary font-label-sm text-label-sm uppercase bg-primary/10 px-sm rounded-full">
-                          Verified
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      className="text-primary font-label-md text-label-md hover:underline underline-offset-4"
-                      onClick={reset}
-                    >
-                      Upload another file
-                    </button>
-                  </div>
-                ) : (
-                  <div className="z-10 text-center space-y-lg w-full px-xl">
-                    <div className="w-20 h-20 mx-auto bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[40px]">
-                        cloud_upload
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-headline-md text-headline-md text-primary mb-xs uppercase">
-                        Drag &amp; Drop Resume
-                      </h3>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant">
-                        or click to browse from your device (PDF, DOCX)
-                      </p>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBrowseClick();
-                      }}
-                      className="bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-primary-container transition-all active:scale-95"
-                    >
-                      Browse Files
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <DropZone
+              kind="resume"
+              file={resumeFile}
+              onFile={handleResumeFile}
+              onReset={() => setResumeFile(null)}
+            />
+            <DropZone
+              kind="jd"
+              file={jdFile}
+              onFile={handleJdFile}
+              onReset={() => setJdFile(null)}
+            />
 
             {/* Secondary Upload Paths */}
-            <div className="lg:col-span-4 flex flex-col gap-lg">
-              {/* Local Card */}
-              <div
-                onClick={handleBrowseClick}
-                className="bg-white academic-border rounded-xl p-lg shadow-academic flex flex-col h-1/2 hover:border-primary transition-colors cursor-pointer group active:scale-[0.98]"
-              >
-                <div className="mb-auto">
-                  <span className="material-symbols-outlined text-primary mb-sm">
-                    computer
-                  </span>
-                  <h4 className="font-headline-md text-[18px] text-on-surface mb-xs">
-                    Local Drive
-                  </h4>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Import documents directly from your workstation.
-                  </p>
-                </div>
-                <button className="w-full mt-lg py-sm bg-secondary-container text-on-secondary-container rounded-lg font-label-md text-label-md group-hover:bg-primary group-hover:text-white transition-all">
-                  Browse Local
-                </button>
-              </div>
-
-              {/* Cloud Card */}
-              <div className="bg-white academic-border rounded-xl p-lg shadow-academic flex flex-col h-1/2 hover:border-primary transition-colors cursor-pointer group active:scale-[0.98]">
-                <div className="mb-auto">
-                  <div className="flex items-center gap-sm mb-sm">
-                    <span className="material-symbols-outlined text-primary">
-                      cloud_upload
-                    </span>
-                  </div>
-                  <h4 className="font-headline-md text-[18px] text-on-surface mb-xs">
-                    Google Drive
-                  </h4>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Securely connect to your cloud storage repository.
-                  </p>
-                </div>
-                <button className="w-full mt-lg py-sm border border-outline-variant text-on-surface rounded-lg font-label-md text-label-md group-hover:border-primary transition-all flex items-center justify-center gap-sm">
-                  Connect Drive
-                </button>
-              </div>
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SecondaryCard
+                icon={<Monitor size={24} />}
+                title="Local Drive"
+                description="Import documents directly from your workstation."
+                buttonLabel="Browse Local"
+              />
+              <SecondaryCard
+                icon={<Cloud size={24} />}
+                title="Google Drive"
+                description="Securely connect to your cloud storage repository."
+                buttonLabel="Connect Drive"
+              />
             </div>
           </div>
 
-          {/* Guidelines / Disclaimer */}
-          <div className="bg-surface-container-low academic-border p-md rounded-lg flex gap-md items-start">
-            <span className="material-symbols-outlined text-primary text-[20px] mt-xs">
-              info
-            </span>
-            <div className="space-y-xs">
-              <p className="font-label-md text-label-md text-primary uppercase tracking-wider">
+          {/* Guidelines */}
+          <div
+            className="p-4 rounded-lg flex gap-3 items-start"
+            style={{ background: "var(--surface-container-low)", border: "1px solid #e2e8f0" }}
+          >
+            <Info size={20} className="mt-1 shrink-0" style={{ color: "var(--primary)" }} />
+            <div className="space-y-1">
+              <p
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: "var(--primary)" }}
+              >
                 Privacy &amp; Processing
               </p>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">
-                By uploading, you agree to the Institutional Data Processing
-                agreement. Files are parsed for lexical density and
-                structural integrity. All personal data is handled under
-                ISO/IEC 27001 standards.
+              <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>
+                By uploading, you agree to the Institutional Data Processing agreement. Files are
+                parsed for lexical density and structural integrity. All personal data is handled
+                under ISO/IEC 27001 standards.
               </p>
             </div>
           </div>
@@ -240,35 +450,30 @@ export default function Upload() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full mt-auto bg-surface-container-high border-t border-outline-variant">
-        <div className="max-w-container-max mx-auto py-xl px-lg grid grid-cols-1 md:grid-cols-2 gap-md items-center">
-          <div className="space-y-sm">
-            <span className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
+      <footer
+        className="w-full mt-auto"
+        style={{ background: "var(--surface-container-high)", borderTop: "1px solid var(--outline-variant)" }}
+      >
+        <div className="max-w-[1280px] mx-auto py-12 px-6 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <div className="space-y-2">
+            <span className="text-2xl font-semibold" style={{ color: "var(--primary)" }}>
               ResumeScout
             </span>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
+            <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>
               © 2024 ResumeScout. Institutional Precision in Talent Acquisition.
             </p>
           </div>
-          <div className="flex md:justify-end gap-lg">
-            <a
-              className="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors hover:underline underline-offset-4"
-              href="#"
-            >
-              Privacy Policy
-            </a>
-            <a
-              className="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors hover:underline underline-offset-4"
-              href="#"
-            >
-              Terms of Service
-            </a>
-            <a
-              className="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors hover:underline underline-offset-4"
-              href="#"
-            >
-              API Documentation
-            </a>
+          <div className="flex md:justify-end gap-6">
+            {["Privacy Policy", "Terms of Service", "API Documentation"].map((label) => (
+              <a
+                key={label}
+                href="#"
+                className="text-sm hover:underline underline-offset-4 transition-colors"
+                style={{ color: "var(--on-surface-variant)" }}
+              >
+                {label}
+              </a>
+            ))}
           </div>
         </div>
       </footer>
